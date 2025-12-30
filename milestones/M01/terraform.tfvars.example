@@ -1,0 +1,56 @@
+# Example Terraform variable values for Milestone 01
+#
+# INSTRUCTIONS:
+# 1. Copy this file to `terraform.tfvars`:
+#    cp terraform.tfvars.example terraform.tfvars
+#
+# 2. Update the values with your information
+#
+# 3. NEVER commit terraform.tfvars to Git (it's in .gitignore)
+#
+# 4. For CI/CD, set these as GitHub Actions secrets or environment variables
+#
+# Why we separate configuration from code:
+# - Allows different values per environment
+# - Keeps sensitive data out of version control
+# - Enables team collaboration without conflicts
+
+# ============================================================================
+# REQUIRED VARIABLES
+# ============================================================================
+
+# Azure region (DO NOT CHANGE - required for ProTrack evaluation)
+location = "eastus2"
+
+# Environment name (use "dev" for M01)
+environment = "dev"
+
+# Your project name (lowercase, 3-12 chars)
+# Example: "protrack", "azureproj", "cloudeng"
+project_name = "protrack"
+
+# Your unique student identifier
+# Use your GitHub username or student ID
+# Example: "jsmith", "student-12345"
+student_id = "YOUR_GITHUB_USERNAME"
+
+# ============================================================================
+# OPTIONAL TAGS
+# ============================================================================
+
+# Additional tags for cost tracking and organization
+# These merge with default tags defined in variables.tf
+tags = {
+  ManagedBy = "Terraform"
+  Platform  = "ProTrack"
+  Milestone = "M01"
+  Owner     = "YOUR_NAME"
+}
+
+# ============================================================================
+# NOTES
+# ============================================================================
+# - DO NOT commit credentials or secrets to this file
+# - Use Azure CLI (`az login`) for local authentication
+# - Use GitHub OIDC for CI authentication (no secrets needed)
+# - Test locally before pushing: `terraform plan`

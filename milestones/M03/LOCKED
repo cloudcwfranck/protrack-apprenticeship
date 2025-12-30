@@ -1,0 +1,133 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                         🔒 MILESTONE 03 IS LOCKED 🔒                         ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+This milestone is currently locked and cannot be started.
+
+WHY IS THIS LOCKED?
+═══════════════════
+
+Milestone 03 represents advanced Azure cloud engineering topics that build
+directly on concepts from M01 and M02. Attempting M03 without mastering the
+previous milestones will result in:
+
+  - Inability to understand networking and security concepts
+  - Poor architectural decisions
+  - Deployments that work but violate best practices
+  - Frustration and wasted time
+
+ProTrack enforces sequential completion to ensure you're truly ready.
+
+HOW TO UNLOCK M03
+═════════════════
+
+Complete BOTH previous milestones in order:
+
+  STEP 1: Complete M01
+  ────────────────────
+  ✅ Deploy Azure storage infrastructure
+  ✅ Document architecture in runbook
+  ✅ Collect evidence
+  ✅ Pass CI validation
+  ✅ Merge PR to main
+
+  STEP 2: Complete M02
+  ────────────────────
+  ⏳ (Unlocks after M01 merges)
+  ✅ Complete M02 requirements (revealed after unlock)
+  ✅ Pass CI validation
+  ✅ Merge PR to main
+
+  STEP 3: M03 Unlocks Automatically
+  ──────────────────────────────────
+  ⏳ (Unlocks immediately after M02 merge)
+  🎉 This LOCKED file disappears
+  📂 M03 requirements appear
+
+CURRENT REQUIREMENTS TO UNLOCK
+═══════════════════════════════
+
+Before you can start M03, you must:
+
+  [ ] M01 deployed and merged ← START HERE
+  [ ] M02 unlocked
+  [ ] M02 deployed and merged
+  [ ] M03 unlocked ← YOU ARE HERE
+
+TIMELINE
+════════
+
+Typical progression timeline:
+  - M01: 1-2 weeks
+  - M02: 1-3 weeks
+  - M03: 2-4 weeks
+
+Total time from starting ProTrack to M03 unlock: ~4-9 weeks
+
+This timeline assumes:
+  - Focused work (10-15 hours/week)
+  - Passing CI on first try (good practices)
+  - Minimal review cycles
+
+WHAT IS M03 ABOUT?
+══════════════════
+
+We can't reveal full requirements yet, but M03 typically covers:
+  - Advanced Azure networking
+  - Multi-tier application architecture
+  - Security hardening and compliance
+  - Production-grade monitoring and logging
+  - Disaster recovery planning
+
+These topics require solid understanding of M01 and M02 concepts.
+
+DON'T TRY TO BYPASS THIS
+════════════════════════
+
+The same locking enforcement from M02 applies here:
+
+  ❌ Manual deletion of LOCKED files → CI fails
+  ❌ Copying solutions from others → Plagiarism detection
+  ❌ Modifying CI workflows → Validation fails
+  ❌ Creating M03 files early → Locked milestone check fails
+
+There are no shortcuts. Complete M01 and M02 first.
+
+CURRENT STATUS
+══════════════
+
+🔒 M03 Status: LOCKED (you are here)
+🔒 M02 Status: Check `ls milestones/M02/LOCKED`
+✅ M01 Status: Check `ls milestones/M01/main.tf`
+
+Next Action: If you haven't started M01, start there.
+
+FOCUS ON YOUR CURRENT MILESTONE
+════════════════════════════════
+
+If you're reading this file, you're likely:
+
+  1. Just starting ProTrack → Focus on M01
+  2. Curious about M03 → That's great, but complete M01 and M02 first
+  3. Trying to skip ahead → Don't. It won't work and wastes time.
+
+The best thing you can do right now is close this file and work on whatever
+milestone is currently unlocked for you.
+
+NEED HELP?
+══════════
+
+- Read: docs/MILESTONE_LOCKING.md (complete explanation)
+- Review: README.md (quickstart guide)
+- Ask: GitHub issues or ProTrack discussions
+
+═══════════════════════════════════════════════════════════════════════════════
+
+M03 will be here when you're ready. Take your time. Build mastery, not just
+completion checkmarks.
+
+See you after M02. 👨‍💻
+
+═══════════════════════════════════════════════════════════════════════════════

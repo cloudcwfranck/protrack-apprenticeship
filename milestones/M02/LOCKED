@@ -1,0 +1,118 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                         🔒 MILESTONE 02 IS LOCKED 🔒                         ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+This milestone is currently locked and cannot be started.
+
+WHY IS THIS LOCKED?
+═══════════════════
+
+ProTrack enforces sequential learning to ensure you build foundational skills
+before tackling advanced topics. You cannot start M02 until you've successfully
+completed and demonstrated competency in M01.
+
+This isn't arbitrary—cloud engineering concepts build on each other. Skipping
+fundamentals leads to:
+  - Incomplete understanding of Azure resource organization
+  - Security vulnerabilities in advanced deployments
+  - Inability to troubleshoot complex issues
+  - Poor architectural decisions
+
+HOW TO UNLOCK M02
+═════════════════
+
+Complete these steps in order:
+
+  1. ✅ Complete all M01 requirements:
+     - Deploy Terraform infrastructure
+     - Fill out docs/M01/runbook.md
+     - Collect evidence via ./scripts/collect_evidence.sh M01
+
+  2. ✅ Submit Pull Request for M01:
+     - Create branch: git checkout -b m01-work
+     - Commit your work
+     - Push and open PR to main
+
+  3. ✅ Pass CI Validation:
+     - Wait for GitHub Actions to complete
+     - Fix any errors that CI reports
+     - Ensure all checks are green ✅
+
+  4. ✅ Get PR Approved:
+     - Address reviewer feedback
+     - Make any requested changes
+
+  5. ✅ Merge Your PR:
+     - Click "Merge" button in GitHub
+     - M02 unlocks automatically within minutes
+
+WHAT UNLOCKING LOOKS LIKE
+══════════════════════════
+
+After your M01 PR merges:
+  - This LOCKED file disappears
+  - M02 Terraform files appear in this directory
+  - M02 documentation appears in docs/M02/
+  - CI allows you to work on M02
+
+You'll receive a notification when unlock completes.
+
+TIMELINE
+════════
+
+Typical unlock timeline:
+  - M01 work: 3-7 days
+  - CI validation: 2-5 minutes
+  - Review process: 1-3 days
+  - Unlock after merge: Immediate
+
+Total time from starting M01 to M02 unlock: ~1-2 weeks
+
+CAN I PREVIEW M02 REQUIREMENTS?
+═══════════════════════════════
+
+No. The full requirements are hidden until unlock.
+
+Why? Because previewing advanced requirements before completing fundamentals:
+  - Encourages skipping learning steps
+  - Leads to cargo-culting solutions without understanding
+  - Defeats the purpose of sequential mastery
+
+Trust the process. Complete M01 first.
+
+DON'T TRY TO BYPASS THIS
+════════════════════════
+
+Attempting to:
+  ❌ Delete this LOCKED file manually → CI will fail
+  ❌ Modify .github/workflows/ to skip checks → CI will fail
+  ❌ Create M02 files yourself → CI will fail
+  ❌ Copy from other students → Plagiarism detection will catch it
+
+The locking system is CI-enforced and cannot be bypassed.
+
+CURRENT STATUS
+══════════════
+
+🔒 M02 Status: LOCKED
+✅ M01 Status: Check by running `ls milestones/M01/main.tf`
+
+Next Action: Complete M01 and submit your PR
+
+NEED HELP?
+══════════
+
+- Read: docs/MILESTONE_LOCKING.md
+- Review: README.md for the complete workflow
+- Ask: Open a GitHub issue if you have questions
+
+═══════════════════════════════════════════════════════════════════════════════
+
+You're doing great by completing M01 first. This structure exists to make you
+a better engineer, not to slow you down.
+
+Keep going. M02 will be here when you're ready.
+
+═══════════════════════════════════════════════════════════════════════════════

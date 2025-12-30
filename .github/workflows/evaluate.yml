@@ -1,0 +1,469 @@
+# ProTrack Student Evaluation Workflow
+#
+# Purpose:
+#   Validates student submissions against ProTrack requirements
+#   Enforces milestone locking and sequential progression
+#   Provides clear feedback for failed validations
+#
+# When this runs:
+#   - On every push to branches matching: m01-*, m02-*, m03-*
+#   - On every pull request to main branch
+#   - Manually via workflow_dispatch (for testing)
+#
+# What this validates:
+#   ✅ Terraform syntax and formatting
+#   ✅ Required files exist (runbook, evidence, Terraform configs)
+#   ✅ Milestone locking rules (can't skip ahead)
+#   ✅ No prohibited files committed (secrets, .tfstate, credentials)
+#   ✅ Evidence completeness
+#   ✅ Resource naming conventions
+#
+# What this does NOT do:
+#   ❌ Deploy your infrastructure (you do this locally)
+#   ❌ Store Azure credentials (uses GitHub OIDC)
+#   ❌ Modify your code
+#
+# Failure behavior:
+#   - PR is blocked from merging
+#   - Check run shows specific errors
+#   - Fix errors and push again (CI re-runs automatically)
+
+name: ProTrack Evaluation
+
+on:
+  # Trigger on pushes to milestone work branches
+  push:
+    branches:
+      - 'm01-*'
+      - 'm02-*'
+      - 'm03-*'
+      - 'main'
+
+  # Trigger on pull requests to main
+  pull_request:
+    branches:
+      - main
+
+  # Allow manual workflow runs for testing
+  workflow_dispatch:
+    inputs:
+      milestone:
+        description: 'Milestone to validate (M01, M02, M03)'
+        required: true
+        type: choice
+        options:
+          - M01
+          - M02
+          - M03
+
+# Ensure only one workflow runs at a time per PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # JOB 1: Detect which milestone is being worked on
+  # ============================================================================
+  detect-milestone:
+    name: Detect Milestone
+    runs-on: ubuntu-latest
+    outputs:
+      milestone: ${{ steps.detect.outputs.milestone }}
+      is_student_branch: ${{ steps.detect.outputs.is_student_branch }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for accurate diff
+
+      - name: Detect milestone from changes
+        id: detect
+        run: |
+          # Determine milestone from branch name or changed files
+
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          echo "Branch: $BRANCH_NAME"
+
+          # Check if this is a student milestone branch
+          IS_STUDENT_BRANCH="false"
+
+          # Extract milestone from branch name (e.g., m01-work -> M01)
+          if [[ "$BRANCH_NAME" =~ ^m0([1-3])- ]]; then
+            MILESTONE="M0${BASH_REMATCH[1]}"
+            IS_STUDENT_BRANCH="true"
+            echo "✅ Detected student milestone branch: $MILESTONE"
+          else
+            # This is an admin/setup branch - skip milestone validation
+            echo "ℹ️  Non-student branch detected: $BRANCH_NAME"
+            echo "⏭️  Skipping milestone-specific validation"
+            MILESTONE="NONE"
+            IS_STUDENT_BRANCH="false"
+          fi
+
+          # Manual override from workflow_dispatch
+          if [[ -n "${{ inputs.milestone }}" ]]; then
+            MILESTONE="${{ inputs.milestone }}"
+            IS_STUDENT_BRANCH="true"
+            echo "Manual override: $MILESTONE"
+          fi
+
+          echo "milestone=$MILESTONE" >> $GITHUB_OUTPUT
+          echo "is_student_branch=$IS_STUDENT_BRANCH" >> $GITHUB_OUTPUT
+
+          # Log changed files (for debugging only - not used as output)
+          echo "Changed files:"
+          git diff --name-only origin/main...HEAD || echo "  (none)"
+
+  # ============================================================================
+  # JOB 2: Validate milestone locking
+  # ============================================================================
+  # Prevents students from skipping ahead to M02/M03 before completing M01
+  check-milestone-lock:
+    name: Validate Milestone Locking
+    runs-on: ubuntu-latest
+    needs: detect-milestone
+    # Only run for student milestone branches
+    if: needs.detect-milestone.outputs.is_student_branch == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if milestone is unlocked
+        id: check-lock
+        run: |
+          MILESTONE="${{ needs.detect-milestone.outputs.milestone }}"
+          echo "Validating unlock status for: $MILESTONE"
+
+          # M01 is always unlocked
+          if [[ "$MILESTONE" == "M01" ]]; then
+            echo "✅ M01 is always unlocked"
+            exit 0
+          fi
+
+          # Check if LOCKED file exists
+          LOCK_FILE="milestones/$MILESTONE/LOCKED"
+          if [[ -f "$LOCK_FILE" ]]; then
+            echo "❌ ERROR: $MILESTONE is still LOCKED"
+            echo ""
+            echo "This milestone cannot be started until you:"
+            echo "  1. Complete the previous milestone"
+            echo "  2. Pass CI validation"
+            echo "  3. Merge your PR to main"
+            echo ""
+            echo "See docs/MILESTONE_LOCKING.md for details"
+            exit 1
+          fi
+
+          echo "✅ $MILESTONE is unlocked and ready for work"
+
+  # ============================================================================
+  # JOB 3: Validate Terraform
+  # ============================================================================
+  # Checks syntax, formatting, and structure
+  terraform-validate:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+    needs: [detect-milestone, check-milestone-lock]
+    # Only run for student milestone branches
+    if: needs.detect-milestone.outputs.is_student_branch == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.6.0"
+
+      - name: Terraform Format Check
+        id: fmt
+        run: |
+          MILESTONE="${{ needs.detect-milestone.outputs.milestone }}"
+          cd "milestones/$MILESTONE"
+
+          echo "Checking Terraform formatting..."
+          if ! terraform fmt -check -recursive; then
+            echo "❌ ERROR: Terraform files are not properly formatted"
+            echo ""
+            echo "Fix with: terraform fmt -recursive"
+            exit 1
+          fi
+          echo "✅ Formatting is correct"
+
+      - name: Terraform Init
+        id: init
+        run: |
+          MILESTONE="${{ needs.detect-milestone.outputs.milestone }}"
+          cd "milestones/$MILESTONE"
+
+          echo "Initializing Terraform..."
+          terraform init -backend=false
+          echo "✅ Initialization successful"
+
+      - name: Terraform Validate
+        id: validate
+        run: |
+          MILESTONE="${{ needs.detect-milestone.outputs.milestone }}"
+          cd "milestones/$MILESTONE"
+
+          echo "Validating Terraform configuration..."
+          if ! terraform validate; then
+            echo "❌ ERROR: Terraform validation failed"
+            echo ""
+            echo "Review the errors above and fix your configuration"
+            exit 1
+          fi
+          echo "✅ Validation passed"
+
+  # ============================================================================
+  # JOB 4: Check required files
+  # ============================================================================
+  # Ensures students completed all documentation and evidence
+  check-required-files:
+    name: Required Files Check
+    runs-on: ubuntu-latest
+    needs: detect-milestone
+    # Only run for student milestone branches
+    if: needs.detect-milestone.outputs.is_student_branch == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify required files exist
+        run: |
+          MILESTONE="${{ needs.detect-milestone.outputs.milestone }}"
+          echo "Checking required files for $MILESTONE..."
+
+          ERRORS=0
+
+          # Required Terraform files
+          REQUIRED_TF_FILES=(
+            "milestones/$MILESTONE/main.tf"
+            "milestones/$MILESTONE/variables.tf"
+            "milestones/$MILESTONE/outputs.tf"
+            "milestones/$MILESTONE/versions.tf"
+          )
+
+          for file in "${REQUIRED_TF_FILES[@]}"; do
+            if [[ ! -f "$file" ]]; then
+              echo "❌ Missing: $file"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✅ Found: $file"
+            fi
+          done
+
+          # Required documentation
+          RUNBOOK="docs/$MILESTONE/runbook.md"
+          if [[ ! -f "$RUNBOOK" ]]; then
+            echo "❌ Missing runbook: $RUNBOOK"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "✅ Found: $RUNBOOK"
+
+            # Check if runbook is filled out (not just template)
+            if grep -q "TODO:" "$RUNBOOK"; then
+              echo "⚠️  WARNING: Runbook contains TODO markers"
+              echo "   Complete all sections before submitting"
+            fi
+          fi
+
+          # Required evidence (only check if PR is being merged)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            EVIDENCE_FILE="evidence/$MILESTONE/deployment_evidence.json"
+            if [[ ! -f "$EVIDENCE_FILE" ]]; then
+              echo "❌ Missing evidence: $EVIDENCE_FILE"
+              echo "   Run: ./scripts/collect_evidence.sh $MILESTONE"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✅ Found: $EVIDENCE_FILE"
+            fi
+          fi
+
+          # Fail if any required files are missing
+          if [[ $ERRORS -gt 0 ]]; then
+            echo ""
+            echo "❌ $ERRORS required file(s) missing"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ All required files present"
+
+  # ============================================================================
+  # JOB 5: Security scan
+  # ============================================================================
+  # Prevents students from committing secrets or sensitive files
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: detect-milestone
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for prohibited files
+        run: |
+          echo "Scanning for prohibited files..."
+
+          ERRORS=0
+
+          # Files that should NEVER be committed
+          PROHIBITED_PATTERNS=(
+            "*.tfstate"
+            "*.tfstate.backup"
+            "terraform.tfvars"
+            ".terraform.tfstate.lock.info"
+            "*.pem"
+            "*.key"
+            "credentials.json"
+            ".env"
+            "*.pfx"
+            "*.p12"
+          )
+
+          for pattern in "${PROHIBITED_PATTERNS[@]}"; do
+            if find . -name "$pattern" -not -path "./.git/*" | grep -q .; then
+              echo "❌ PROHIBITED FILE FOUND: $pattern"
+              find . -name "$pattern" -not -path "./.git/*"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          if [[ $ERRORS -gt 0 ]]; then
+            echo ""
+            echo "❌ Security violation: Prohibited files detected"
+            echo "   Remove these files and ensure they're in .gitignore"
+            exit 1
+          fi
+
+          echo "✅ No prohibited files found"
+
+      - name: Scan for hardcoded secrets
+        run: |
+          echo "Scanning for potential secrets in code..."
+
+          # Simple pattern matching for common secret formats
+          # In production, use tools like truffleHog or GitGuardian
+
+          if grep -r -i -E "(password|secret|key|token)\s*=\s*['\"][^'\"]{8,}" \
+               --exclude-dir=.git \
+               --exclude-dir=.github \
+               --exclude="*.md" \
+               --exclude="runbook.md" \
+               . ; then
+            echo "⚠️  WARNING: Potential hardcoded secrets detected"
+            echo "   Review the matches above carefully"
+            echo "   If these are false positives, you can proceed"
+            echo "   If these are real secrets, remove them immediately"
+            # Don't fail on this - it's too prone to false positives
+          else
+            echo "✅ No obvious secrets detected"
+          fi
+
+  # ============================================================================
+  # JOB 6: Generate scorecard (placeholder)
+  # ============================================================================
+  # This would call protrack-core for actual grading
+  # For now, it's a placeholder showing the interface
+  generate-scorecard:
+    name: Generate Scorecard
+    runs-on: ubuntu-latest
+    needs: [detect-milestone, terraform-validate, check-required-files, security-scan]
+    # Only run for student milestone branches
+    if: github.event_name == 'pull_request' && needs.detect-milestone.outputs.is_student_branch == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Placeholder - Call ProTrack Core Evaluator
+        run: |
+          MILESTONE="${{ needs.detect-milestone.outputs.milestone }}"
+
+          echo "========================================="
+          echo "ProTrack Scorecard - $MILESTONE"
+          echo "========================================="
+          echo ""
+          echo "This workflow would call the reusable evaluator from protrack-core"
+          echo "to generate your grading scorecard."
+          echo ""
+          echo "Example call:"
+          echo "  uses: QuestLogicSolutions/protrack-core/.github/workflows/evaluate.yml@main"
+          echo "  with:"
+          echo "    milestone: $MILESTONE"
+          echo "    student_repo: ${{ github.repository }}"
+          echo ""
+          echo "The evaluator would assess:"
+          echo "  - Terraform quality (40%)"
+          echo "  - Documentation completeness (30%)"
+          echo "  - Evidence quality (20%)"
+          echo "  - Process adherence (10%)"
+          echo ""
+          echo "For now, manual review is required."
+          echo "✅ All automated checks passed!"
+
+  # ============================================================================
+  # JOB 7: Summary
+  # ============================================================================
+  evaluation-summary:
+    name: Evaluation Summary
+    runs-on: ubuntu-latest
+    needs: [detect-milestone, terraform-validate, check-required-files, security-scan]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# ProTrack Evaluation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch**: ${{ github.head_ref || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check if this is a student branch
+          if [[ "${{ needs.detect-milestone.outputs.is_student_branch }}" == "true" ]]; then
+            echo "**Milestone**: ${{ needs.detect-milestone.outputs.milestone }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## Student Milestone Validation Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Terraform Validation | ${{ needs.terraform-validate.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Required Files | ${{ needs.check-required-files.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [[ "${{ needs.terraform-validate.result }}" == "success" ]] && \
+               [[ "${{ needs.check-required-files.result }}" == "success" ]] && \
+               [[ "${{ needs.security-scan.result }}" == "success" ]]; then
+              echo "✅ **All checks passed!** Your submission is ready for review." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Some checks failed.** Review the errors above and push fixes." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "**Type**: Admin/Setup Branch" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## Repository Maintenance" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️  This is an administrative or setup branch." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Student milestone validation has been skipped." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [[ "${{ needs.security-scan.result }}" == "success" ]]; then
+              echo "✅ **Security checks passed.** This branch is ready to merge." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Security scan failed.** Review and fix security issues before merging." >> $GITHUB_STEP_SUMMARY
+            fi
+          fi

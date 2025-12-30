@@ -1,0 +1,265 @@
+# ProTrack Student Repository - Git Ignore Rules
+#
+# This file prevents sensitive data and unnecessary files from being committed.
+# DO NOT modify these rules without understanding the security implications.
+
+# ============================================================================
+# TERRAFORM FILES (SECURITY CRITICAL)
+# ============================================================================
+# These files contain secrets, state, or credentials and must NEVER be committed
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform.tfstate.lock.info
+
+# Terraform variable files with actual values (templates are OK)
+terraform.tfvars
+*.auto.tfvars
+
+# Terraform plan files (may contain sensitive data)
+*.tfplan
+tfplan
+
+# Terraform crash log files
+crash.log
+crash.*.log
+
+# Terraform CLI configuration files
+.terraformrc
+terraform.rc
+
+# ============================================================================
+# TERRAFORM DIRECTORIES
+# ============================================================================
+# These directories contain downloaded providers and modules
+
+# Terraform provider plugins
+.terraform/
+.terraform.lock.hcl
+
+# Terraform module cache
+.terraform.d/
+
+# ============================================================================
+# AZURE CREDENTIALS (CRITICAL - NEVER COMMIT)
+# ============================================================================
+
+# Azure CLI credentials
+.azure/
+
+# Service principal files
+*.pem
+*.key
+*.pfx
+*.p12
+sp_credentials.json
+azure_credentials.json
+
+# Azure subscription files
+subscription.json
+credentials.json
+
+# ============================================================================
+# SECRETS AND KEYS
+# ============================================================================
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Secret files
+secrets/
+*.secret
+*.secrets
+
+# Key files
+*.asc
+id_rsa*
+*.pub
+
+# Certificate files
+*.crt
+*.cer
+*.der
+
+# ============================================================================
+# OPERATING SYSTEM FILES
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================================================
+# IDE AND EDITOR FILES
+# ============================================================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+.history/
+
+# JetBrains IDEs (IntelliJ, PyCharm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw?
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================================
+# TEMPORARY FILES
+# ============================================================================
+
+# General temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Log files
+*.log
+logs/
+
+# ============================================================================
+# BUILD AND DEPENDENCY DIRECTORIES
+# ============================================================================
+
+# Node.js (if you add any tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if you add any scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+ENV/
+env/
+
+# ============================================================================
+# EVIDENCE FILES (OPTIONAL - COMMENT OUT IF NEEDED)
+# ============================================================================
+# By default, we DO commit evidence files, but you may want to exclude
+# large screenshots or videos. Uncomment if needed:
+
+# Uncomment to ignore large evidence files
+# evidence/**/*.mp4
+# evidence/**/*.mov
+# evidence/**/*.avi
+
+# ============================================================================
+# LOCAL TESTING AND SCRATCH
+# ============================================================================
+
+# Local testing directories
+sandbox/
+scratch/
+test/
+local/
+
+# Personal notes (keep these private)
+NOTES.md
+TODO.txt
+notes/
+
+# ============================================================================
+# CI/CD ARTIFACTS
+# ============================================================================
+
+# GitHub Actions local testing
+.act/
+
+# ============================================================================
+# ALLOWED EXCEPTIONS
+# ============================================================================
+# These files SHOULD be committed even if they match patterns above
+
+# Terraform example files (templates without secrets)
+!terraform.tfvars.example
+!*.tf.example
+
+# Environment variable templates
+!.env.example
+
+# GitHub workflows (required for CI)
+!.github/
+
+# Evidence JSON files (required for grading)
+!evidence/**/deployment_evidence.json
+!evidence/**/SUMMARY.txt
+
+# Documentation
+!docs/**/*.md
+
+# Scripts
+!scripts/**/*.sh
+!scripts/**/*.py
+
+# ============================================================================
+# PROTRACK SPECIFIC
+# ============================================================================
+
+# Keep LOCKED files (they're part of the milestone system)
+!**/LOCKED
+
+# Keep all .md files (documentation is required)
+!**/*.md
+
+# ============================================================================
+# SECURITY REMINDER
+# ============================================================================
+#
+# Before every commit, verify you're not adding secrets:
+#
+#   git diff --staged | grep -i -E "(password|secret|key|token)"
+#
+# If you see anything suspicious, DO NOT COMMIT.
+#
+# If you accidentally commit secrets:
+#   1. Immediately rotate/regenerate the secret in Azure
+#   2. Remove from git history (git filter-branch or BFG Repo-Cleaner)
+#   3. Force push (if the commit was pushed)
+#   4. Notify ProTrack administrators
+#
+# ============================================================================
