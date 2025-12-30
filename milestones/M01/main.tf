@@ -103,3 +103,4 @@ resource "azurerm_resource_group" "main" {
 # - Adding diagnostic settings for monitoring
 #
 # These are NOT required for M01 but demonstrate deeper Azure knowledge.
+# Completed by cloudcwfranck on Tue Dec 30 17:30:18 EST 2025
